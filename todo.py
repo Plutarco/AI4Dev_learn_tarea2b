@@ -3,7 +3,7 @@ Crear un servicio web que permita a los usuarios crear, leer,
 actualizar y eliminar tareas usando FastAPI.
 """
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 from typing import List, Optional
 from datetime import datetime
 
@@ -20,7 +20,8 @@ class Tarea(BaseModel):
     fecha_creacion: datetime = datetime.now()
     prioridad: int = 0
 
-    @validator('prioridad')
+    @field_validator('prioridad')
+    @classmethod
     def validar_prioridad(cls, v):
         if not isinstance(v, int):
             raise ValueError("La prioridad debe ser un número entero")
