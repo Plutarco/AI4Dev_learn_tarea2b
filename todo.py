@@ -8,6 +8,9 @@ from typing import List, Optional
 from datetime import datetime
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime
 from sqlalchemy.orm import sessionmaker, Session, DeclarativeBase
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import os
 
 # Configuración de la base de datos
 SQLALCHEMY_DATABASE_URL = "sqlite:///./tareas.db"
@@ -56,6 +59,12 @@ class Tarea(BaseModel):
 # Crear la aplicación FastAPI
 app = FastAPI(title="API de Tareas",
              description="API para gestionar tareas pendientes")
+
+# Crear directorio 'static' si no existe
+os.makedirs("static", exist_ok=True)
+
+# Montar los archivos estáticos
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Dependency
 def get_db():
@@ -119,3 +128,8 @@ async def eliminar_tarea(tarea_id: int, db: Session = Depends(get_db)):
     db.delete(db_tarea)
     db.commit()
     return {"mensaje": "Tarea eliminada"}
+
+@app.get("/")
+async def root():
+    """Servir la página principal"""
+    return FileResponse("static/index.html")

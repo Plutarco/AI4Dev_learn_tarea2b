@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Tareas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .tarea {
+            border: 1px solid #ddd;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .tarea.completada {
+            background-color: #e8ffe8;
+        }
+        .formulario {
+            margin-bottom: 20px;
+        }
+        .formulario input, .formulario textarea {
+            margin: 5px 0;
+            padding: 5px;
+            width: 100%;
+        }
+        .acciones {
+            margin-top: 10px;
+        }
+        button {
+            padding: 5px 10px;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gestor de Tareas</h1>
+    
+    <div class="formulario">
+        <h2>Nueva Tarea</h2>
+        <input type="text" id="titulo" placeholder="Título">
+        <textarea id="descripcion" placeholder="Descripción"></textarea>
+        <input type="number" id="prioridad" placeholder="Prioridad" value="0">
+        <button onclick="crearTarea()">Crear Tarea</button>
+    </div>
+
+    <div id="lista-tareas"></div>
+
+    <script>
+        async function cargarTareas() {
+            const response = await fetch('/tareas/');
+            const tareas = await response.json();
+            const listaTareas = document.getElementById('lista-tareas');
+            listaTareas.innerHTML = '';
+            
+            tareas.sort((a, b) => b.prioridad - a.prioridad);
+            
+            tareas.forEach(tarea => {
+                const elemento = document.createElement('div');
+                elemento.className = `tarea ${tarea.completada ? 'completada' : ''}`;
+                elemento.innerHTML = `
+                    <h3>${tarea.titulo}</h3>
+                    <p>${tarea.descripcion}</p>
+                    <p>Prioridad: ${tarea.prioridad}</p>
+                    <div class="acciones">
+                        <button onclick="toggleCompletada(${tarea.id}, ${!tarea.completada})">
+                            ${tarea.completada ? 'Marcar Pendiente' : 'Marcar Completada'}
+                        </button>
+                        <button onclick="eliminarTarea(${tarea.id})">Eliminar</button>
+                    </div>
+                `;
+                listaTareas.appendChild(elemento);
+            });
+        }
+
+        async function crearTarea() {
+            const titulo = document.getElementById('titulo').value;
+            const descripcion = document.getElementById('descripcion').value;
+            const prioridad = parseInt(document.getElementById('prioridad').value);
+
+            if (!titulo) {
+                alert('El título es obligatorio');
+                return;
+            }
+
+            const response = await fetch('/tareas/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    titulo,
+                    descripcion,
+                    prioridad,
+                    completada: false
+                })
+            });
+
+            if (response.ok) {
+                document.getElementById('titulo').value = '';
+                document.getElementById('descripcion').value = '';
+                document.getElementById('prioridad').value = '0';
+                cargarTareas();
+            }
+        }
+
+        async function toggleCompletada(id, completada) {
+            const response = await fetch(`/tareas/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    id,
+                    completada,
+                    titulo: document.querySelector(`.tarea:nth-child(${id}) h3`).textContent,
+                    descripcion: document.querySelector(`.tarea:nth-child(${id}) p`).textContent,
+                    prioridad: parseInt(document.querySelector(`.tarea:nth-child(${id}) p:nth-child(3)`).textContent.split(': ')[1])
+                })
+            });
+
+            if (response.ok) {
+                cargarTareas();
+            }
+        }
+
+        async function eliminarTarea(id) {
+            if (!confirm('¿Estás seguro de que deseas eliminar esta tarea?')) {
+                return;
+            }
+
+            const response = await fetch(`/tareas/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                cargarTareas();
+            }
+        }
+
+        // Cargar tareas al iniciar
+        cargarTareas();
+    </script>
+</body>
+</html> 
