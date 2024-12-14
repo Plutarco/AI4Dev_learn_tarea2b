@@ -1,0 +1,9 @@
+Prompt:
+[comentario: todo.py tiene un docstring mínimo que explica el programa.]
+Implementa este programa
+
+Escribe un módulo de prueba para verificar la funcionalidad de todo.py
+
+Podrías añadir un campo de prioridad que puede ser un entero positivo 
+o negativo en el ranto de -1000 a +1000, y actualizar las pruebas
+respectivamente.
