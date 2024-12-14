@@ -1,10 +1,36 @@
 from fastapi.testclient import TestClient
-from todo import app
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from todo import app, Base, get_db
 import pytest
 from datetime import datetime
 
+# Crear base de datos de prueba
+SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Crear las tablas de prueba
+Base.metadata.create_all(bind=engine)
+
+def override_get_db():
+    db = TestingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# Sobreescribir la dependencia
+app.dependency_overrides[get_db] = override_get_db
+
 # Crear el cliente de pruebas
 client = TestClient(app)
+
+@pytest.fixture(autouse=True)
+def cleanup():
+    Base.metadata.create_all(bind=engine)
+    yield
+    Base.metadata.drop_all(bind=engine)
 
 def test_crear_tarea():
     """Prueba la creación de una nueva tarea"""
